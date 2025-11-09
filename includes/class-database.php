@@ -417,3 +417,5 @@ private function table_exists($table_name) {
 			return $result > 0;
 		}
 
+
+}
