@@ -17,8 +17,6 @@ class KataWP_Activation {
         // Create pages
         self::create_pages();
         
-        // Import database
-        self::import_database();
         
         // Set activation flag
         update_option('katawp_activated', true);
@@ -28,7 +26,7 @@ class KataWP_Activation {
     /**
      * Create necessary pages with shortcodes
      */
-    private static function create_pages() {
+    public static function create_pages() {
         $pages = array(
             array(
                 'post_title'    => __('Daily Readings', 'katawp'),
@@ -76,14 +74,3 @@ class KataWP_Activation {
         }
     }
     
-    /**
-     * Import database on activation
-     */
-    private static function import_database() {
-        $importer = new KataWP_DB_Importer();
-        $importer->import_data();
-    }
-}
-
-// Hook activation
-register_activation_hook(KATAWP_PLUGIN_FILE, array('KataWP_Activation', 'activate'));
