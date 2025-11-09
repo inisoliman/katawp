@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) exit;
  */
 
 class KataWP_Shortcodes {
-
+    
     public function __construct() {
         add_shortcode('katawp_readings', [$this, 'readings_shortcode']);
         add_shortcode('katawp_search', [$this, 'search_shortcode']);
@@ -18,6 +18,7 @@ class KataWP_Shortcodes {
     /**
      * Display daily readings shortcode
      * Supports both Gregorian and Coptic dates
+     * Falls back to Gregorian if Coptic query returns no results
      */
     public function readings_shortcode($atts) {
         $atts = shortcode_atts([
@@ -39,16 +40,21 @@ class KataWP_Shortcodes {
             $month = intval($gregorian_parts[1]);
             $day = intval($gregorian_parts[2]);
             $year = intval($gregorian_parts[0]);
-            // Use a reference point to determine coptic date
-            // For now, use current date conversion as example
             $coptic_date = $this->gregorian_to_coptic_approximation($month, $day, $year);
         }
         
-        // Fetch reading from database using both date formats
+        // Try to fetch reading by Coptic date first
         $reading = $db->get_today_reading_by_coptic_date($coptic_date);
         
+        // Fallback: Try Gregorian date if Coptic query returns nothing
         if (!$reading) {
-            return '<div class="katawp-no-reading"><p>' . __('لا توجد قراءات لهذا اليوم', 'katawp') . '</p></div>';
+            $reading = $db->get_today_reading($gregorian_date);
+        }
+        
+        // Fallback 2: Log if both queries fail
+        if (!$reading) {
+            error_log('[KataWP] No reading found for Coptic: ' . $coptic_date . ' or Gregorian: ' . $gregorian_date);
+            return '<div class="katawp-no-reading"><p>' . esc_html__('لا توجد قراءات لهذا اليوم', 'katawp') . '</p></div>';
         }
         
         // Prepare data for template
@@ -67,55 +73,81 @@ class KataWP_Shortcodes {
     }
     
     /**
-     * Search shortcode for readings
+     * Helper method to convert Gregorian to approximate Coptic date
+     */
+    private function gregorian_to_coptic_approximation($month, $day, $year) {
+        $coptic_month = $month;
+        $coptic_day = $day;
+        $coptic_year = $year - 284; // Coptic calendar starts 284 AD
+        
+        return $coptic_month . '/' . $coptic_day . '/' . $coptic_year;
+    }
+    
+    /**
+     * Search shortcode for searching readings and saints
      */
     public function search_shortcode($atts) {
+        $atts = shortcode_atts([
+            'keyword' => '',
+            'limit' => 20
+        ], $atts);
+        
+        if (empty($atts['keyword'])) {
+            return '';
+        }
+        
+        $db = new KataWP_Database();
+        $results = $db->search_synaxarium($atts['keyword']);
+        
+        if (empty($results)) {
+            return '<div class="katawp-search-no-results"><p>' . esc_html__('لم يتم العثور على نتائج', 'katawp') . '</p></div>';
+        }
+        
         ob_start();
-        include KATAWP_PLUGIN_DIR . 'templates/search.php';
+        ?>
+        <div class="katawp-search-results">
+            <?php foreach ($results as $result) : ?>
+                <div class="katawp-search-result-item">
+                    <h4><?php echo esc_html($result->saint_name); ?></h4>
+                    <p><?php echo wp_trim_words(wp_kses_post($result->saint_biography), 50); ?></p>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <?php
         return ob_get_clean();
     }
     
     /**
-     * Display saint information shortcode
+     * Saint/Synaxarium shortcode
      */
     public function saint_shortcode($atts) {
-        $atts = shortcode_atts(['name' => ''], $atts);
+        $atts = shortcode_atts([
+            'id' => 0
+        ], $atts);
         
-        if (empty($atts['name'])) {
+        if (empty($atts['id'])) {
             return '';
         }
         
-        global $wpdb;
-        $saint = $wpdb->get_row(
-            $wpdb->prepare(
-                "SELECT * FROM " . KATAWP_DB_PREFIX . "synaxarium WHERE saint_name LIKE %s",
-                '%' . $wpdb->esc_like($atts['name']) . '%'
-            )
-        );
+        $db = new KataWP_Database();
+        $saint = $db->get_synaxarium(intval($atts['id']));
         
         if (!$saint) {
-            return '<div class="katawp-no-saint"><p>' . __('لم يتم العثور على القديس', 'katawp') . '</p></div>';
+            return '<div class="katawp-saint-not-found"><p>' . esc_html__('لم يتم العثور على القديس', 'katawp') . '</p></div>';
         }
         
-        return '<div class="katawp-saint"><h3>' . esc_html($saint->saint_name) . '</h3><p>' . wp_kses_post($saint->biography) . '</p></div>';
-    }
-    
-    /**
-     * Helper function to approximate Coptic date from Gregorian
-     * This uses a simple approximation - can be enhanced with full conversion
-     */
-    private function gregorian_to_coptic_approximation($month, $day, $year) {
-        // Create a date string in the format expected by date converter
-        // This is a simplified version - full conversion would use the converter class
-        $gregorian_string = $month . '/' . $day . '/' . $year;
-        
-        // For accurate conversion, we would need to implement the reverse
-        // of the coptic_to_gregorian function. For now, return in a format
-        // that the database can query
-        return $month . '/' . $day . '/' . ($year - 5492); // Approximate Coptic year
+        ob_start();
+        ?>
+        <div class="katawp-saint-info">
+            <h3><?php echo esc_html($saint->saint_name); ?></h3>
+            <?php if (!empty($saint->icon_url)) : ?>
+                <img src="<?php echo esc_url($saint->icon_url); ?>" alt="<?php echo esc_attr($saint->saint_name); ?>" class="katawp-saint-icon">
+            <?php endif; ?>
+            <div class="katawp-saint-biography">
+                <?php echo wp_kses_post($saint->saint_biography); ?>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
     }
 }
-
-// Initialize shortcodes
-new KataWP_Shortcodes();
-?>
