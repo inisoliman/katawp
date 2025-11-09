@@ -321,24 +321,92 @@ class KataWP_Database {
 	 * Populate tables from existing gr_* tables
 	 * Called during plugin activation
 	 */
-	public function populate_from_existing_tables() {
-		global $wpdb;
-		
-		// Check if source tables exist
-		if (!$this->table_exists('gr_days')) {
-			return false;
-		}
-		
-		// Populate synaxarium from gr_days
-		$sql = "INSERT INTO {$this->synaxarium_table} (saint_name, celebration_date, created_at)
-				SELECT CONCAT(Month_Number, '/', Day), DayName, NOW()
-				FROM gr_days 
-				WHERE DayName IS NOT NULL AND DayName != ''
-				ON DUPLICATE KEY UPDATE saint_name=saint_name";
-		$wpdb->query($sql);
-		
-		return true;
-	}
+	/**
+     * استيراد البيانات من الجداول القديمة برموز آمنة وتوافق صحيح
+     * تحويل من gr_days/bible_ar إلى wp_katawp_* جداول
+     */
+    public function populate_from_existing_tables() {
+        global $wpdb;
+        
+        // تحقق من وجود جداول المصدر
+        if (!$this->table_exists('gr_days')) {
+            return false;
+        }
+        
+        try {
+            // 1. استيراد السريانيين (Synaxarium) من gr_days
+            $gr_days = $wpdb->get_results("SELECT * FROM gr_days");
+            
+            foreach ($gr_days as $day) {
+                // حساب التاريخ الغريغوري (يوليو 1 من سنة معينة)
+                $month = intval($day->Month_Number);
+                $day_num = intval($day->Day);
+                
+                $wpdb->insert(
+                    $this->synaxarium_table,
+                    array(
+                        'saint_name' => $day->DayName ?? $day->Month_Name,
+                        'saint_biography' => $day->Other,
+                        'celebration_date' => sprintf("%02d/%02d", $month, $day_num),
+                        'feast_type' => $day->Season,
+                    ),
+                    array('%s', '%s', '%s', '%s')
+                );
+            }
+            
+            // 2. استيراد القراءات اليومية من gr_days والمراجع
+            foreach ($gr_days as $day) {
+                $gregorian_date = $this->convert_coptic_to_gregorian(
+                    intval($day->Month_Number),
+                    intval($day->Day),
+                    (int)date('Y')
+                );
+                
+                // البحث عن السريانى الذي تم إدراجه
+                $synaxarium_id = $wpdb->get_var($wpdb->prepare(
+                    "SELECT id FROM {$this->synaxarium_table} WHERE saint_name = %s LIMIT 1",
+                    $day->DayName ?? $day->Month_Name
+                ));
+                
+                $wpdb->insert(
+                    $this->daily_readings_table,
+                    array(
+                        'gregorian_date' => $gregorian_date,
+                        'coptic_month' => $day->Month_Name,
+                        'coptic_day' => intval($day->Day),
+                        'coptic_year' => 0,
+                        'holiday_name' => $day->DayName,
+                        'holiday_description' => $day->Other,
+                        'synaxarium_id' => $synaxarium_id,
+                        'reading_type' => $day->Season,
+                    ),
+                    array('%s', '%s', '%d', '%d', '%s', '%s', '%d', '%s')
+                );
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            error_log('KataWP populate error: ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * تحويل التاريخ القبطي إلى غريغوري (تحويل تقريبي)
+     */
+    private function convert_coptic_to_gregorian($coptic_month, $coptic_day, $coptic_year) {
+        // التاريخ القبطي يبدأ في 29 أغسطس (في السنة الكبيسة) أو 30 أغسطس
+        $gregorian_year = $coptic_year + 283; // تحويل تقريبي
+        $coptic_epoch = new DateTime('1972-09-11'); // بداية التقويم القبطي في التقويم الغريغوري
+        
+        // حساب الأيام من بداية السنة القبطية
+        $days_in_year = (($coptic_month - 1) * 30) + $coptic_day;
+        
+        $date = clone $coptic_epoch;
+        $date->modify("+{$gregorian_year} years +{$days_in_year} days");
+        
+        return $date->format('Y-m-d');
+    }
 	
 	/**
 	 * Check if table exists
