@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) exit;
 class KataWP_Shortcodes {
     
     public function __construct() {
-        add_shortcode('katawp_readings', [$this, 'readings_shortcode']);
+        add_shortcode('katawp_daily_readings', [$this, 'readings_shortcode']);
         add_shortcode('katawp_search', [$this, 'search_shortcode']);
         add_shortcode('katawp_saint', [$this, 'saint_shortcode']);
     }
