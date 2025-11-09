@@ -52,8 +52,7 @@ function katawp_load_files() {
 }
 
 // تحميل الملفات عند تهيئة الإضافة
-// COMMENTED OUT - Files now loaded directly before class instantiation
-// add_action('plugins_loaded', 'katawp_load_files', 9);
+add_action('plugins_loaded', 'katawp_load_files', 9);
 
 /**
  * الفئة الرئيسية للإضافة
@@ -110,7 +109,13 @@ class KataWP {
         $this->db->create_tables();
         
         // استيراد البيانات من ملف SQL
-   if (class_exists('KataWP_Activation')) {
+        if (class_exists('KataWP_DB_Importer')) {
+            $importer = new KataWP_DB_Importer();
+            $importer->import_data();
+        }
+        
+        // تشغيل activation hooks
+        if (class_exists('KataWP_Activation')) {
             KataWP_Activation::activate();
         }
         
@@ -239,6 +244,4 @@ class KataWP {
 }
 
 // إنشاء نسخة من الفئة الرئيسية
-// تحميل ملفات الإضافة قبل تهيئة الفئة الرئيسية
-katawp_load_files();
 KataWP::get_instance();
