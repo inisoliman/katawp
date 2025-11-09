@@ -369,7 +369,7 @@ class KataWP_Database {
                 ));
                 
                 $wpdb->insert(
-                    $this->daily_readings_table,
+                    $this->readings_table,
                     array(
                         'gregorian_date' => $gregorian_date,
                         'coptic_month' => $day->Month_Name,
@@ -411,13 +411,10 @@ class KataWP_Database {
 	/**
 	 * Check if table exists
 	 */
-	private function table_exists($table_name) {
-		global $wpdb;
-		$table = $wpdb->get_var($wpdb->prepare(
-			"SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
-			DB_NAME,
-			$table_name
-		));
-		return $table ? true : false;
+private function table_exists($table_name) {
+			global $wpdb;
+			$result = $wpdb->query("SHOW TABLES LIKE '" . $table_name . "'");
+			return $result > 0;
+		}
 	}
 }
