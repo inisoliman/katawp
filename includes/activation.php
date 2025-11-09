@@ -3,9 +3,8 @@ if (!defined('ABSPATH')) exit;
 
 /**
  * KataWP Activation Handler
- * Automatically creates pages and sets up initial configuration
+ * Automatically creates tables, imports data, and sets up pages
  */
-
 class KataWP_Activation {
     
     public static function activate() {
@@ -14,15 +13,24 @@ class KataWP_Activation {
             return;
         }
         
+        // Create tables and import data
+        self::setup_database();
+        
         // Create pages
         self::create_pages();
-        
-        // Import database
-        self::import_database();
         
         // Set activation flag
         update_option('katawp_activated', true);
         update_option('katawp_activation_date', current_time('mysql'));
+    }
+    
+    /**
+     * Setup database - create tables and import data
+     */
+    private static function setup_database() {
+        $db = new KataWP_Database();
+        $db->create_tables();
+        $db->populate_from_existing_tables();
     }
     
     /**
@@ -31,36 +39,28 @@ class KataWP_Activation {
     private static function create_pages() {
         $pages = array(
             array(
-                'post_title'    => __('Daily Readings', 'katawp'),
-                'post_content'  => '[katawp_readings]',
-                'post_status'   => 'publish',
-                'post_type'     => 'page',
-                'meta_key'      => 'katawp_page_type',
-                'meta_value'    => 'readings'
+                'post_title' => __('Daily Readings', 'katawp'),
+                'post_content' => '[katawp_daily_readings]',
+                'post_status' => 'publish',
+                'post_type' => 'page',
+                'meta_key' => 'katawp_page_type',
+                'meta_value' => 'readings'
             ),
             array(
-                'post_title'    => __('Search', 'katawp'),
-                'post_content'  => '[katawp_search]',
-                'post_status'   => 'publish',
-                'post_type'     => 'page',
-                'meta_key'      => 'katawp_page_type',
-                'meta_value'    => 'search'
+                'post_title' => __('Search', 'katawp'),
+                'post_content' => '[katawp_search]',
+                'post_status' => 'publish',
+                'post_type' => 'page',
+                'meta_key' => 'katawp_page_type',
+                'meta_value' => 'search'
             ),
             array(
-                'post_title'    => __('Synaxarium', 'katawp'),
-                'post_content'  => '[katawp_synaxarium]',
-                'post_status'   => 'publish',
-                'post_type'     => 'page',
-                'meta_key'      => 'katawp_page_type',
-                'meta_value'    => 'synaxarium'
-            ),
-            array(
-                'post_title'    => __('Saints', 'katawp'),
-                'post_content'  => '[katawp_saints]',
-                'post_status'   => 'publish',
-                'post_type'     => 'page',
-                'meta_key'      => 'katawp_page_type',
-                'meta_value'    => 'saints'
+                'post_title' => __('Synaxarium', 'katawp'),
+                'post_content' => '[katawp_synaxarium]',
+                'post_status' => 'publish',
+                'post_type' => 'page',
+                'meta_key' => 'katawp_page_type',
+                'meta_value' => 'synaxarium'
             )
         );
         
@@ -74,14 +74,6 @@ class KataWP_Activation {
                 add_post_meta($post_id, $meta_key, $meta_value, true);
             }
         }
-    }
-    
-    /**
-     * Import database on activation
-     */
-    private static function import_database() {
-        $importer = new KataWP_DB_Importer();
-        $importer->import_data();
     }
 }
 
