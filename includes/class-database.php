@@ -145,7 +145,6 @@ class KataWP_Database {
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        
         dbDelta($sql);
     }
     
@@ -177,14 +176,12 @@ class KataWP_Database {
     
     /**
      * Get reading by Coptic date
-     * Uses date converter to fetch readings based on Coptic calendar
      */
     public function get_today_reading_by_coptic_date($coptic_date) {
         if (empty($coptic_date)) {
             return null;
         }
         
-        // Extract coptic date components
         $coptic_parts = explode('/', $coptic_date);
         if (count($coptic_parts) !== 3) {
             return null;
@@ -194,17 +191,14 @@ class KataWP_Database {
         $coptic_day = intval($coptic_parts[1]);
         $coptic_year = intval($coptic_parts[2]);
         
-        // Query database for reading matching coptic date
         $reading = $this->wpdb->get_row(
             $this->wpdb->prepare(
-                "SELECT * FROM {$this->readings_table} 
-                 WHERE coptic_month = %d AND coptic_day = %d AND coptic_year = %d",
+                "SELECT * FROM {$this->readings_table} WHERE coptic_month = %d AND coptic_day = %d AND coptic_year = %d",
                 $coptic_month, $coptic_day, $coptic_year
             )
         );
         
         if ($reading) {
-            // Populate related data
             $reading->synaxarium = $this->get_synaxarium($reading->synaxarium_id);
             $reading->epistle = $this->get_epistle($reading->epistle_id);
             $reading->gospel = $this->get_gospel($reading->gospel_id);
@@ -213,5 +207,113 @@ class KataWP_Database {
         }
         
         return $reading;
+    }
+    
+    /**
+     * Get synaxarium by ID
+     */
+    public function get_synaxarium($id) {
+        if (empty($id)) {
+            return null;
+        }
+        
+        return $this->wpdb->get_row(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$this->synaxarium_table} WHERE id = %d",
+                $id
+            )
+        );
+    }
+    
+    /**
+     * Get epistle by ID
+     */
+    public function get_epistle($id) {
+        if (empty($id)) {
+            return null;
+        }
+        
+        return $this->wpdb->get_row(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$this->epistle_table} WHERE id = %d",
+                $id
+            )
+        );
+    }
+    
+    /**
+     * Get gospel by ID
+     */
+    public function get_gospel($id) {
+        if (empty($id)) {
+            return null;
+        }
+        
+        return $this->wpdb->get_row(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$this->gospel_table} WHERE id = %d",
+                $id
+            )
+        );
+    }
+    
+    /**
+     * Get apostles by ID
+     */
+    public function get_apostles($id) {
+        if (empty($id)) {
+            return null;
+        }
+        
+        return $this->wpdb->get_row(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$this->apostles_table} WHERE id = %d",
+                $id
+            )
+        );
+    }
+    
+    /**
+     * Get liturgy by ID
+     */
+    public function get_liturgy($id) {
+        if (empty($id)) {
+            return null;
+        }
+        
+        return $this->wpdb->get_row(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$this->liturgy_table} WHERE id = %d",
+                $id
+            )
+        );
+    }
+    
+    /**
+     * Get all synaxarium entries
+     */
+    public function get_all_synaxarium($limit = 50, $offset = 0) {
+        return $this->wpdb->get_results(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$this->synaxarium_table} ORDER BY celebration_date ASC LIMIT %d OFFSET %d",
+                $limit, $offset
+            )
+        );
+    }
+    
+    /**
+     * Search synaxarium
+     */
+    public function search_synaxarium($keyword) {
+        if (empty($keyword)) {
+            return [];
+        }
+        
+        return $this->wpdb->get_results(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$this->synaxarium_table} WHERE MATCH (saint_name, saint_biography) AGAINST (%s IN BOOLEAN MODE)",
+                $keyword
+            )
+        );
     }
 }
