@@ -244,4 +244,10 @@ class KataWP {
 }
 
 // إنشاء نسخة من الفئة الرئيسية
-KataWP::get_instance();
+
+// تهيئة الإضافة الرئيسية - Initialize the plugin
+add_action('plugins_loaded', function() {
+	if (class_exists('KataWP')) {
+		KataWP::get_instance();
+	}
+}, 10);
