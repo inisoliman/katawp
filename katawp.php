@@ -252,4 +252,4 @@ add_action('plugins_loaded', function() {
 }, 10);
 
 // Register plugin activation hook
-register_activation_hook(KATAWP_PLUGIN_FILE, function() { KataWP::get_instance()->activate(); }
+register_activation_hook(KATAWP_PLUGIN_FILE, function() { KataWP::get_instance()->activate(); });
