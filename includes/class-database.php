@@ -1,0 +1,171 @@
+<?php
+/**
+ * فئة إدارة قاعدة البيانات
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+class KataWP_Database {
+    
+    public $wpdb;
+    public $readings_table;
+    public $synaxarium_table;
+    public $epistle_table;
+    public $gospel_table;
+    public $apostles_table;
+    public $liturgy_table;
+    public $saints_table;
+    
+    public function __construct() {
+        global $wpdb;
+        $this->wpdb = $wpdb;
+        
+        // تعريف أسماء الجداول
+        $this->readings_table = KATAWP_DB_PREFIX . 'daily_readings';
+        $this->synaxarium_table = KATAWP_DB_PREFIX . 'synaxarium';
+        $this->epistle_table = KATAWP_DB_PREFIX . 'epistle';
+        $this->gospel_table = KATAWP_DB_PREFIX . 'gospel';
+        $this->apostles_table = KATAWP_DB_PREFIX . 'apostles';
+        $this->liturgy_table = KATAWP_DB_PREFIX . 'liturgy';
+        $this->saints_table = KATAWP_DB_PREFIX . 'saints';
+    }
+    
+    /**
+     * إنشاء جداول قاعدة البيانات
+     */
+    public function create_tables() {
+        $charset_collate = $this->wpdb->get_charset_collate();
+        $sql = "";
+        
+        // جدول القراءات اليومية
+        $sql .= "CREATE TABLE IF NOT EXISTS {$this->readings_table} (
+            id BIGINT(20) NOT NULL AUTO_INCREMENT,
+            gregorian_date DATE NOT NULL,
+            coptic_month VARCHAR(50),
+            coptic_day INT,
+            coptic_year INT,
+            holiday_name VARCHAR(255),
+            holiday_description LONGTEXT,
+            reading_type VARCHAR(100),
+            synaxarium_id BIGINT(20),
+            epistle_id BIGINT(20),
+            gospel_id BIGINT(20),
+            apostles_id BIGINT(20),
+            liturgy_id BIGINT(20),
+            saints_ids LONGTEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY unique_gregorian (gregorian_date),
+            KEY idx_coptic_date (coptic_month, coptic_day, coptic_year),
+            FULLTEXT KEY ft_holiday (holiday_name, holiday_description)
+        ) $charset_collate;";
+        
+        // جدول السنكسار
+        $sql .= "CREATE TABLE IF NOT EXISTS {$this->synaxarium_table} (
+            id BIGINT(20) NOT NULL AUTO_INCREMENT,
+            saint_name VARCHAR(255) NOT NULL,
+            saint_name_en VARCHAR(255),
+            saint_biography LONGTEXT,
+            celebration_date VARCHAR(100),
+            icon_url VARCHAR(500),
+            feast_type VARCHAR(50),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_name (saint_name),
+            FULLTEXT KEY ft_search (saint_name, saint_biography)
+        ) $charset_collate;";
+        
+        // جدول البولس (الرسالة)
+        $sql .= "CREATE TABLE IF NOT EXISTS {$this->epistle_table} (
+            id BIGINT(20) NOT NULL AUTO_INCREMENT,
+            book_name VARCHAR(255),
+            chapter INT,
+            verse_start INT,
+            verse_end INT,
+            text LONGTEXT,
+            text_en LONGTEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_book (book_name, chapter),
+            FULLTEXT KEY ft_search (text)
+        ) $charset_collate;";
+        
+        // جدول الإنجيل
+        $sql .= "CREATE TABLE IF NOT EXISTS {$this->gospel_table} (
+            id BIGINT(20) NOT NULL AUTO_INCREMENT,
+            gospel_name VARCHAR(100),
+            chapter INT,
+            verse_start INT,
+            verse_end INT,
+            text LONGTEXT,
+            text_en LONGTEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_gospel (gospel_name, chapter),
+            FULLTEXT KEY ft_search (text)
+        ) $charset_collate;";
+        
+        // جدول الرسل
+        $sql .= "CREATE TABLE IF NOT EXISTS {$this->apostles_table} (
+            id BIGINT(20) NOT NULL AUTO_INCREMENT,
+            reading_text LONGTEXT,
+            reading_text_en LONGTEXT,
+            source VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            FULLTEXT KEY ft_search (reading_text)
+        ) $charset_collate;";
+        
+        // جدول القداس
+        $sql .= "CREATE TABLE IF NOT EXISTS {$this->liturgy_table} (
+            id BIGINT(20) NOT NULL AUTO_INCREMENT,
+            liturgy_name VARCHAR(255),
+            liturgy_type VARCHAR(100),
+            content LONGTEXT,
+            content_en LONGTEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_type (liturgy_type)
+        ) $charset_collate;";
+        
+        // جدول القديسين
+        $sql .= "CREATE TABLE IF NOT EXISTS {$this->saints_table} (
+            id BIGINT(20) NOT NULL AUTO_INCREMENT,
+            name VARCHAR(255) NOT NULL,
+            name_en VARCHAR(255),
+            biography LONGTEXT,
+            feast_date VARCHAR(100),
+            icon_url VARCHAR(500),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            FULLTEXT KEY ft_search (name, biography)
+        ) $charset_collate;";
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        
+        dbDelta($sql);
+    }
+    
+    /**
+     * الحصول على قراءة اليوم
+     */
+    public function get_today_reading($date = null) {
+        if (null === $date) {
+            $date = date('Y-m-d');
+        }
+        
+        $reading = $this->wpdb->get_row(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$this->readings_table} WHERE gregorian_date = %s",
+                $date
+            )
+        );
+        
+        if ($reading) {
+            $reading->synaxarium = $this->get_synaxarium($reading->synaxarium_id);
+            $reading->epistle = $this->get_epistle($reading->epistle_id);
+            $reading->gospel = $this->get_gospel($reading->gospel_id);
+            $reading->apostles = $this->get_apostles($reading->apostles_i
