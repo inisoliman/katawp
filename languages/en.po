@@ -1,0 +1,51 @@
+# English Translation for KataWP Plugin
+# Copyright (C) 2024 KataWP
+# This file is distributed under the same license as the KataWP package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: KataWP 1.0\n"
+"POT-Creation-Date: 2024-01-01 00:00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: KataWP Team\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Daily Readings"
+msgstr "Daily Readings"
+
+msgid "Synaxarium"
+msgstr "Synaxarium"
+
+msgid "Bible Verses"
+msgstr "Bible Verses"
+
+msgid "Search"
+msgstr "Search"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Dashboard"
+msgstr "Dashboard"
+
+msgid "Plugin Settings"
+msgstr "Plugin Settings"
+
+msgid "Save Changes"
+msgstr "Save Changes"
+
+msgid "View Readings"
+msgstr "View Readings"
+
+msgid "No results found"
+msgstr "No results found"
+
+msgid "Error loading data"
+msgstr "Error loading data"
+
+msgid "Loading..."
+msgstr "Loading..."
