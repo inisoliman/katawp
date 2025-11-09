@@ -1,5 +1,4 @@
 <?php
-
 if (!defined('ABSPATH')) exit;
 
 class KataWP_DB_Importer {
@@ -25,13 +24,26 @@ class KataWP_DB_Importer {
     }
     
     private function prepare_sql($content) {
-        $old_prefix = 'wp_';
-        $new_prefix = KATAWP_DB_PREFIX;
+        // استبدال أسماء الجداول القديمة بالجديدة
+        $table_mappings = [
+            'bible_ar' => KATAWP_DB_PREFIX . 'daily_readings',
+            'bible_en' => KATAWP_DB_PREFIX . 'daily_readings',
+            'gr_days' => KATAWP_DB_PREFIX . 'synaxarium',
+            'gr_lent' => KATAWP_DB_PREFIX . 'synaxarium',
+            'gr_nineveh' => KATAWP_DB_PREFIX . 'synaxarium',
+            'gr_pentecost' => KATAWP_DB_PREFIX . 'synaxarium',
+            'gr_sundays' => KATAWP_DB_PREFIX . 'synaxarium',
+            'wp_katawp_synaxarium' => KATAWP_DB_PREFIX . 'synaxarium',
+            'wp_katawp_epistle' => KATAWP_DB_PREFIX . 'epistle',
+            'wp_katawp_gospel' => KATAWP_DB_PREFIX . 'gospel',
+            'wp_katawp_apostles' => KATAWP_DB_PREFIX . 'apostles',
+            'wp_katawp_liturgy' => KATAWP_DB_PREFIX . 'liturgy',
+            'wp_katawp_saints' => KATAWP_DB_PREFIX . 'saints'
+        ];
         
-        $tables = ['daily_readings', 'synaxarium', 'epistle', 'gospel', 'apostles', 'liturgy', 'saints'];
-        
-        foreach ($tables as $table) {
-            $content = str_replace($old_prefix . $table, $new_prefix . $table, $content);
+        foreach ($table_mappings as $old_table => $new_table) {
+            $content = str_replace("`" . $old_table . "`", "`" . $new_table . "`", $content);
+            $content = str_replace($old_table, $new_table, $content);
         }
         
         return $content;
