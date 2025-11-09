@@ -73,9 +73,6 @@ class KataWP {
         // تحميل نطاقات الترجمة
         add_action('plugins_loaded', [$this, 'load_textdomain']);
         
-        // تفعيل الإضافة
-        register_activation_hook(KATAWP_PLUGIN_FILE, [$this, 'activate']);
-        
         // إلغاء تفعيل الإضافة
         register_deactivation_hook(KATAWP_PLUGIN_FILE, [$this, 'deactivate']);
         
@@ -107,16 +104,18 @@ class KataWP {
     public function activate() {
         // إنشاء الجداول
         $this->db->create_tables();
+		        error_log('KataWP: Activation started - creating database tables');
         
         // استيراد البيانات من ملف SQL
         if (class_exists('KataWP_DB_Importer')) {
             $importer = new KataWP_DB_Importer();
             $importer->import_data();
+			        error_log('KataWP: Database import completed');
         }
         
         // تشغيل activation hooks
         if (class_exists('KataWP_Activation')) {
-            KataWP_Activation::activate();
+            KataWP_Activation::create_pages();
         }
         
         // إضافة خيارات افتراضية
@@ -251,3 +250,6 @@ add_action('plugins_loaded', function() {
 		KataWP::get_instance();
 	}
 }, 10);
+
+// Register plugin activation hook
+register_activation_hook(KATAWP_PLUGIN_FILE, array('KataWP', 'activate'));
