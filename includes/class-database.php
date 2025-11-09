@@ -163,46 +163,55 @@ class KataWP_Database {
                 $date
             )
         );
-			}
-
-        	/**
-	 * Get reading by Coptic date
-	 * Uses date converter to fetch readings based on Coptic calendar
-	 */
-	public function get_today_reading_by_coptic_date($coptic_date) {
-		if (empty($coptic_date)) {
-			return null;
-		}
-		
-		// Extract coptic date components
-		$coptic_parts = explode('/', $coptic_date);
-		if (count($coptic_parts) !== 3) {
-			return null;
-		}
-		
-		$coptic_month = intval($coptic_parts[0]);
-		$coptic_day = intval($coptic_parts[1]);
-		$coptic_year = intval($coptic_parts[2]);
-		
-		// Query database for reading matching coptic date
-		$reading = $this->wpdb->get_row(
-			$this->wpdb->prepare(
-				"SELECT * FROM {$this->readings_table} 
-				 WHERE coptic_month = %d AND coptic_day = %d AND coptic_year = %d",
-				$coptic_month, $coptic_day, $coptic_year
-			)
-		);
-		
-		if ($reading) {
-			// Populate related data
-			$reading->synaxarium = $this->get_synaxarium($reading->synaxarium_id);
-			$reading->epistle = $this->get_epistle($reading->epistle_id);
-			$reading->gospel = $this->get_gospel($reading->gospel_id);
-			$reading->apostles = $this->get_apostles($reading->apostles_id);
-			$reading->liturgy = $this->get_liturgy($reading->liturgy_id);
-		}
-		
-		return $reading;
-	}
         
-        }    
+        if ($reading) {
+            $reading->synaxarium = $this->get_synaxarium($reading->synaxarium_id);
+            $reading->epistle = $this->get_epistle($reading->epistle_id);
+            $reading->gospel = $this->get_gospel($reading->gospel_id);
+            $reading->apostles = $this->get_apostles($reading->apostles_id);
+            $reading->liturgy = $this->get_liturgy($reading->liturgy_id);
+        }
+        
+        return $reading;
+    }
+    
+    /**
+     * Get reading by Coptic date
+     * Uses date converter to fetch readings based on Coptic calendar
+     */
+    public function get_today_reading_by_coptic_date($coptic_date) {
+        if (empty($coptic_date)) {
+            return null;
+        }
+        
+        // Extract coptic date components
+        $coptic_parts = explode('/', $coptic_date);
+        if (count($coptic_parts) !== 3) {
+            return null;
+        }
+        
+        $coptic_month = intval($coptic_parts[0]);
+        $coptic_day = intval($coptic_parts[1]);
+        $coptic_year = intval($coptic_parts[2]);
+        
+        // Query database for reading matching coptic date
+        $reading = $this->wpdb->get_row(
+            $this->wpdb->prepare(
+                "SELECT * FROM {$this->readings_table} 
+                 WHERE coptic_month = %d AND coptic_day = %d AND coptic_year = %d",
+                $coptic_month, $coptic_day, $coptic_year
+            )
+        );
+        
+        if ($reading) {
+            // Populate related data
+            $reading->synaxarium = $this->get_synaxarium($reading->synaxarium_id);
+            $reading->epistle = $this->get_epistle($reading->epistle_id);
+            $reading->gospel = $this->get_gospel($reading->gospel_id);
+            $reading->apostles = $this->get_apostles($reading->apostles_id);
+            $reading->liturgy = $this->get_liturgy($reading->liturgy_id);
+        }
+        
+        return $reading;
+    }
+}
