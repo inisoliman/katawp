@@ -52,7 +52,8 @@ function katawp_load_files() {
 }
 
 // تحميل الملفات عند تهيئة الإضافة
-add_action('plugins_loaded', 'katawp_load_files', 9);
+// COMMENTED OUT - Files now loaded directly before class instantiation
+// add_action('plugins_loaded', 'katawp_load_files', 9);
 
 /**
  * الفئة الرئيسية للإضافة
@@ -244,4 +245,6 @@ class KataWP {
 }
 
 // إنشاء نسخة من الفئة الرئيسية
+// تحميل ملفات الإضافة قبل تهيئة الفئة الرئيسية
+katawp_load_files();
 KataWP::get_instance();
