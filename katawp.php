@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: كاتامرس - القراءات اليومية المتقدمة | Katawp - Advanced Daily Readings
- * Description: إضافة شاملة وقوية لعرض القراءات اليومية، السنكسار، الإنجيل، والبولس مع دعم تعدد اللغات والبحث المتقدم
+ * Description: إضافة شاملة وقوية لعرض القراءات اليومية، السنكسار، الإنجيل، والبولس مع دعم تعدد اللغات والبحث المتقدم والـ SEO
  * Version: 1.0.0
  * Author: inisoliman
  * Author URI: https://github.com/inisoliman
@@ -19,31 +19,47 @@ if (!defined('ABSPATH')) {
 }
 
 // تعريف الثوابت الأساسية للإضافة
+define('KATAWP_PLUGIN_FILE', __FILE__);
 define('KATAWP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('KATAWP_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('KATAWP_PLUGIN_VERSION', '1.0.0');
+define('KATAWP_VERSION', '1.0.0');
+define('KATAWP_DB_VERSION', '1.0');
 define('KATAWP_DB_PREFIX', $GLOBALS['wpdb']->prefix . 'katawp_');
 
-// تحميل ملفات الإضافة الأساسية
-require_once KATAWP_PLUGIN_DIR . 'includes/class-database.php';
-require_once KATAWP_PLUGIN_DIR . 'includes/functions.php';
-require_once KATAWP_PLUGIN_DIR . 'includes/shortcodes.php';
-require_once KATAWP_PLUGIN_DIR . 'includes/widgets.php';
-require_once KATAWP_PLUGIN_DIR . 'includes/rest-api.php';
-
-// تحميل ملفات الإدارة (Admin)
-if (is_admin()) {
-    require_once KATAWP_PLUGIN_DIR . 'admin/admin-panel.php';
+/**
+ * تحميل جميع ملفات الإضافة المطلوبة
+ */
+function katawp_load_files() {
+    // ملفات الأساس
+    require_once KATAWP_PLUGIN_DIR . 'includes/class-database.php';
+    require_once KATAWP_PLUGIN_DIR . 'includes/functions.php';
+    require_once KATAWP_PLUGIN_DIR . 'includes/db-importer.php';
+    require_once KATAWP_PLUGIN_DIR . 'includes/cache.php';
+    require_once KATAWP_PLUGIN_DIR . 'includes/seo.php';
+    require_once KATAWP_PLUGIN_DIR . 'includes/activation.php';
+    require_once KATAWP_PLUGIN_DIR . 'includes/api-handlers.php';
+    require_once KATAWP_PLUGIN_DIR . 'includes/frontend.php';
+    require_once KATAWP_PLUGIN_DIR . 'includes/shortcode.php';
+    require_once KATAWP_PLUGIN_DIR . 'includes/widgets.php';
+    require_once KATAWP_PLUGIN_DIR . 'includes/rest-api.php';
+    
+    // ملفات الإدارة (Admin)
+    if (is_admin()) {
+        require_once KATAWP_PLUGIN_DIR . 'admin/admin-panel.php';
+        require_once KATAWP_PLUGIN_DIR . 'admin/settings.php';
+    }
 }
 
+// تحميل الملفات عند تهيئة الإضافة
+add_action('plugins_loaded', 'katawp_load_files', 9);
+
 /**
- * فئة رئيسية للإضافة
+ * الفئة الرئيسية للإضافة
  */
 class KataWP {
     
     private static $instance = null;
     public $db;
-    public $importer;
     
     public static function get_instance() {
         if (null === self::$instance) {
@@ -57,10 +73,10 @@ class KataWP {
         add_action('plugins_loaded', [$this, 'load_textdomain']);
         
         // تفعيل الإضافة
-        register_activation_hook(__FILE__, [$this, 'activate']);
+        register_activation_hook(KATAWP_PLUGIN_FILE, [$this, 'activate']);
         
         // إلغاء تفعيل الإضافة
-        register_deactivation_hook(__FILE__, [$this, 'deactivate']);
+        register_deactivation_hook(KATAWP_PLUGIN_FILE, [$this, 'deactivate']);
         
         // تحميل الأصول (CSS/JS)
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
@@ -91,15 +107,31 @@ class KataWP {
         // إنشاء الجداول
         $this->db->create_tables();
         
-        // استيراد البيانات
-        require_once KATAWP_PLUGIN_DIR . 'includes/db-importer.php';
-        $importer = new KataWP_DB_Importer();
-        $importer->import_data();
+        // استيراد البيانات من ملف SQL
+        if (class_exists('KataWP_DB_Importer')) {
+            $importer = new KataWP_DB_Importer();
+            $importer->import_data();
+        }
+        
+        // تشغيل activation hooks
+        if (class_exists('KataWP_Activation')) {
+            KataWP_Activation::activate();
+        }
         
         // إضافة خيارات افتراضية
-        add_option('katawp_settings', $this->get_default_settings());
+        if (!get_option('katawp_settings')) {
+            add_option('katawp_settings', $this->get_default_settings());
+        }
+        
+        // إضافة المتغيرات المؤقتة
+        if (class_exists('KataWP_Cache')) {
+            KataWP_Cache::setup_cache_groups();
+        }
         
         flush_rewrite_rules();
+        
+        // تسجيل تاريخ التفعيل
+        update_option('katawp_activated_at', current_time('mysql'));
     }
     
     /**
@@ -115,13 +147,12 @@ class KataWP {
     private function get_default_settings() {
         return [
             'language' => 'ar',
+            'enable_cache' => true,
+            'cache_duration' => 24,
             'enable_search' => true,
+            'enable_seo' => true,
             'enable_dark_mode' => true,
             'enable_social_sharing' => true,
-            'enable_email_notifications' => true,
-            'enable_pdf_export' => true,
-            'enable_timeline' => true,
-            'enable_calendar' => true,
             'items_per_page' => 10,
         ];
     }
@@ -135,7 +166,7 @@ class KataWP {
             'katawp-style',
             KATAWP_PLUGIN_URL . 'assets/css/katawp.css',
             [],
-            KATAWP_PLUGIN_VERSION
+            KATAWP_VERSION
         );
         
         // JavaScript
@@ -143,7 +174,7 @@ class KataWP {
             'katawp-script',
             KATAWP_PLUGIN_URL . 'assets/js/katawp.js',
             ['jquery'],
-            KATAWP_PLUGIN_VERSION,
+            KATAWP_VERSION,
             true
         );
         
@@ -165,7 +196,7 @@ class KataWP {
             'katawp-admin-style',
             KATAWP_PLUGIN_URL . 'assets/css/admin.css',
             [],
-            KATAWP_PLUGIN_VERSION
+            KATAWP_VERSION
         );
         
         // JavaScript
@@ -173,7 +204,7 @@ class KataWP {
             'katawp-admin-script',
             KATAWP_PLUGIN_URL . 'assets/js/admin.js',
             ['jquery'],
-            KATAWP_PLUGIN_VERSION,
+            KATAWP_VERSION,
             true
         );
     }
@@ -182,17 +213,32 @@ class KataWP {
      * تهيئة المكونات الرئيسية
      */
     private function init_components() {
-        // تهيئة الشورت كود
-        new KataWP_Shortcodes();
-        
-        // تهيئة الويدجت
-        add_action('widgets_init', function() {
-            register_widget('KataWP_Widget_Readings');
-            register_widget('KataWP_Widget_Search');
+        add_action('plugins_loaded', function() {
+            // تهيئة الشورت كود
+            if (class_exists('KataWP_Shortcodes')) {
+                new KataWP_Shortcodes();
+            }
+            
+            // تهيئة الويدجت
+            add_action('widgets_init', function() {
+                if (class_exists('KataWP_Widget_Readings')) {
+                    register_widget('KataWP_Widget_Readings');
+                }
+                if (class_exists('KataWP_Widget_Search')) {
+                    register_widget('KataWP_Widget_Search');
+                }
+            });
+            
+            // تهيئة REST API
+            if (class_exists('KataWP_REST_API')) {
+                new KataWP_REST_API();
+            }
+            
+            // تهيئة SEO
+            if (class_exists('KataWP_SEO')) {
+                new KataWP_SEO();
+            }
         });
-        
-        // تهيئة REST API
-        new KataWP_REST_API();
     }
 }
 
