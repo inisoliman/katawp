@@ -77,5 +77,3 @@ class KataWP_Activation {
     }
 }
 
-// Hook activation
-register_activation_hook(KATAWP_PLUGIN_FILE, array('KataWP_Activation', 'activate'));
