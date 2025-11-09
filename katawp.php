@@ -110,11 +110,13 @@ class KataWP {
         $this->db->create_tables();
         
         // استيراد البيانات من ملف SQL
-        if (class_exists('KataWP_DB_Importer')) {
-            $importer = new KataWP_DB_Importer();
-            $importer->import_data();
-        }
-        
+/*
+    // DISABLED: Using new populate_from_existing_tables() in KataWP_Activation instead
+    // if (class_exists('KataWP_DB_Importer')) {
+    //     $importer = new KataWP_DB_Importer();
+    //     $importer->import_data();
+    // }
+    */
         // تشغيل activation hooks
         if (class_exists('KataWP_Activation')) {
             KataWP_Activation::activate();
