@@ -416,5 +416,4 @@ private function table_exists($table_name) {
 			$result = $wpdb->query("SHOW TABLES LIKE '" . $table_name . "'");
 			return $result > 0;
 		}
-	}
-}
+
