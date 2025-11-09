@@ -25,8 +25,7 @@ class KataWP_DB_Importer {
     }
     
     private function prepare_sql($content) {
-        $old_prefix = 'wp_';
-        $new_prefix = KATAWP_DB_PREFIX;
+$old_prefix = $wpdb->prefix;        $new_prefix = KATAWP_DB_PREFIX;
         
         $tables = ['daily_readings', 'synaxarium', 'epistle', 'gospel', 'apostles', 'liturgy', 'saints'];
         
