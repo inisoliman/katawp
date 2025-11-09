@@ -204,8 +204,4 @@ class KataWP_Database {
 		return $reading;
 	}
         
-        if ($reading) {
-            $reading->synaxarium = $this->get_synaxarium($reading->synaxarium_id);
-            $reading->epistle = $this->get_epistle($reading->epistle_id);
-            $reading->gospel = $this->get_gospel($reading->gospel_id);
-            $reading->apostles = $this->get_apostles($reading->apostles_i
+        }    
