@@ -163,6 +163,7 @@ class KataWP_Database {
                 $date
             )
         );
+			}
 
         	/**
 	 * Get reading by Coptic date
