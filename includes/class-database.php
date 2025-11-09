@@ -316,4 +316,40 @@ class KataWP_Database {
             )
         );
     }
+
+    	/**
+	 * Populate tables from existing gr_* tables
+	 * Called during plugin activation
+	 */
+	public function populate_from_existing_tables() {
+		global $wpdb;
+		
+		// Check if source tables exist
+		if (!$this->table_exists('gr_days')) {
+			return false;
+		}
+		
+		// Populate synaxarium from gr_days
+		$sql = "INSERT INTO {$this->synaxarium_table} (saint_name, celebration_date, created_at)
+				SELECT CONCAT(Month_Number, '/', Day), DayName, NOW()
+				FROM gr_days 
+				WHERE DayName IS NOT NULL AND DayName != ''
+				ON DUPLICATE KEY UPDATE saint_name=saint_name";
+		$wpdb->query($sql);
+		
+		return true;
+	}
+	
+	/**
+	 * Check if table exists
+	 */
+	private function table_exists($table_name) {
+		global $wpdb;
+		$table = $wpdb->get_var($wpdb->prepare(
+			"SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
+			DB_NAME,
+			$table_name
+		));
+		return $table ? true : false;
+	}
 }
