@@ -33,6 +33,7 @@ function katawp_load_files() {
     // ملفات الأساس
     require_once KATAWP_PLUGIN_DIR . 'includes/class-database.php';
     require_once KATAWP_PLUGIN_DIR . 'includes/functions.php';
+    			require_once KATAWP_PLUGIN_DIR . 'includes/date-converter.php';
     require_once KATAWP_PLUGIN_DIR . 'includes/db-importer.php';
     require_once KATAWP_PLUGIN_DIR . 'includes/cache.php';
     require_once KATAWP_PLUGIN_DIR . 'includes/seo.php';
