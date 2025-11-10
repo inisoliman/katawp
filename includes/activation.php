@@ -64,8 +64,14 @@ class KataWP_Activation {
         
         foreach ($pages as $page) {
             // Check if page already exists
-            $existing = get_page_by_title($page['post_title']);
-            if (!$existing) {
+$query = new WP_Query(array(
+                'title' => $page['post_title'],
+                'post_type' => 'page',
+                'posts_per_page' => 1
+            ));
+            $existing = !empty($query->posts) ? $query->posts[0] : null;
+            wp_reset_postdata();
+            
                 $post_id = wp_insert_post($page);
                 $meta_key = $page['meta_key'];
                 $meta_value = $page['meta_value'];
