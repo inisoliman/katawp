@@ -26,8 +26,11 @@ function katawp_get_coptic_date($date) {
     // تحويل التاريخ الميلادي إلى القبطي
     $reading = new KataWP_Database();
     $result = $reading->wpdb->get_row(
-        "SELECT coptic_day, coptic_month FROM " . KATAWP_DB_PREFIX . "daily_readings 
-        WHERE gregorian_date = '" . $date . "'"
+        $reading->wpdb->prepare(
+            "SELECT coptic_day, coptic_month FROM " . KATAWP_DB_PREFIX . "daily_readings
+            WHERE gregorian_date = %s",
+            $date
+        )
     );
     
     return $result ? $result->coptic_day . ' ' . $result->coptic_month : '';
