@@ -29,6 +29,10 @@ define('KATAWP_DB_PREFIX', $GLOBALS['wpdb']->prefix . 'katawp_');
 /**
  * تحميل جميع ملفات الإضافة المطلوبة
  */
+require_once KATAWP_PLUGIN_DIR . 'includes/class-database.php';
+require_once KATAWP_PLUGIN_DIR . 'includes/db-importer.php';
+require_once KATAWP_PLUGIN_DIR . 'includes/activation.php';
+
 function katawp_load_files() {
     // ملفات الأساس
     require_once KATAWP_PLUGIN_DIR . 'includes/class-database.php';
