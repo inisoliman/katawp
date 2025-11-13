@@ -197,7 +197,7 @@ class KataWP_Database {
         $reading = $this->wpdb->get_row(
             $this->wpdb->prepare(
                 "SELECT * FROM {$this->readings_table} 
-                WHERE coptic_month = %d AND coptic_day = %d AND coptic_year = %d",
+                WHERE coptic_month = %s AND coptic_day = %d AND coptic_year = %d",
                 $coptic_month, $coptic_day, $coptic_year
             )
         );
