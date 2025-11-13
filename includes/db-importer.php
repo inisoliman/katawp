@@ -22,18 +22,19 @@ class KataWP_DB_Importer {
             return false;
         }
         
-        // قراءة محتويات الملف
-        $content = @file_get_contents($sql_file);
-        if (!$content) {
+        // فتح الملف للقراءة
+        $handle = fopen($sql_file, 'r');
+        if (!$handle) {
             error_log('KataWP: لم قراءة محتويات SQL: ' . $sql_file);
             return false;
         }
         
-        // تحضير SQL
-        $content = $this->prepare_sql($content);
-        
         // تنفيذ SQL
-        return $this->execute_sql($content);
+        $result = $this->execute_sql($handle);
+
+        fclose($handle);
+
+        return $result;
     }
     
     /**
@@ -45,7 +46,6 @@ class KataWP_DB_Importer {
             KATAWP_PLUGIN_DIR . 'data/katamars.sql0',
             dirname(__FILE__) . '/../data/katamars.sql',
             dirname(__FILE__) . '/../data/katamars.sql0',
-            wp_upload_dir()['basedir'] . '/katawp/katamars.sql',
         ];
         
         foreach ($possible_locations as $location) {
@@ -80,37 +80,41 @@ class KataWP_DB_Importer {
             'gr_sundays' => KATAWP_DB_PREFIX . 'synaxarium',
         ];
         
-        foreach ($table_mappings as $old_table => $new_table) {
-            $content = str_replace($old_table, $new_table, $content);
-        }
-        
-        return $content;
+        return str_replace(array_keys($table_mappings), array_values($table_mappings), $content);
     }
     
     /**
      * تنفيذ استعلامات SQL - مع التعامل مع الأخطاء
      */
-    private function execute_sql($content) {
-        // تقسيم SQL إلى استعلامات منفردة
-        $queries = array_filter(array_map('trim', explode(";", $content)));
-        
+    private function execute_sql($handle) {
+        $query = '';
         $executed = 0;
         $failed = 0;
-        
-        foreach ($queries as $query) {
-            if (empty($query)) {
+
+        while (($line = fgets($handle)) !== false) {
+            $line = trim($line);
+
+            if (empty($line) || substr($line, 0, 2) == '--' || substr($line, 0, 1) == '#') {
                 continue;
             }
-            
-            // تنفيذ استعلامة SQL
-            $result = $this->wpdb->query($query);
-            
-            if ($result === false) {
-                error_log('KataWP SQL خطأ: ' . $this->wpdb->last_error);
-                error_log('استعلامة: ' . substr($query, 0, 100));
-                $failed++;
-            } else {
-                $executed++;
+
+            $query .= $line;
+
+            if (substr($query, -1) == ';') {
+                $prepared_query = $this->prepare_sql(substr($query, 0, -1));
+
+                if (!empty($prepared_query)) {
+                    $result = $this->wpdb->query($prepared_query);
+
+                    if ($result === false) {
+                        error_log('KataWP SQL خطأ: ' . $this->wpdb->last_error);
+                        error_log('استعلامة: ' . substr($prepared_query, 0, 100));
+                        $failed++;
+                    } else {
+                        $executed++;
+                    }
+                }
+                $query = '';
             }
         }
         
