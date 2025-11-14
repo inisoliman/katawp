@@ -103,7 +103,7 @@ class KataWP_DB_Importer {
             if (substr($query, -1) == ';') {
                 $prepared_query = $this->prepare_sql(substr($query, 0, -1));
 
-                if (!empty($prepared_query)) {
+                if (!empty($prepared_query) && strpos(strtoupper($prepared_query), 'INSERT INTO') === 0) {
                     $result = $this->wpdb->query($prepared_query);
 
                     if ($result === false) {

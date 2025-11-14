@@ -31,15 +31,37 @@ class KataWP_Frontend {
         
         ob_start();
 
-        if ($reading) {
+        if ($reading && isset($reading->synaxarium)) {
             ?>
             <div class="kata-readings-container">
                 <div class="kata-reading-card">
-                    <h3><?php echo esc_html($reading->holiday_name); ?></h3>
+                    <h3><?php echo esc_html($reading->synaxarium->DayName); ?></h3>
                     <div class="kata-reading-content">
-                        <?php echo wp_kses_post($reading->holiday_description); ?>
+                        <h4>Gospel Reading</h4>
+                        <?php if (!empty($reading->gospel_reading)): ?>
+                            <?php foreach ($reading->gospel_reading as $verse): ?>
+                                <p><?php echo esc_html($verse->Text); ?></p>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p><?php _e('Reading not available.', 'katawp'); ?></p>
+                        <?php endif; ?>
+
+                        <h4>Pauline Reading</h4>
+                        <?php if (!empty($reading->pauline_reading)): ?>
+                            <?php foreach ($reading->pauline_reading as $verse): ?>
+                                <p><?php echo esc_html($verse->Text); ?></p>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p><?php _e('Reading not available.', 'katawp'); ?></p>
+                        <?php endif; ?>
                     </div>
                 </div>
+            </div>
+            <?php
+        } else {
+            ?>
+            <div class="kata-readings-container">
+                <p><?php _e('No readings found for this date.', 'katawp'); ?></p>
             </div>
             <?php
         }
@@ -56,13 +78,20 @@ class KataWP_Frontend {
         
         ob_start();
 
-        if ($reading && $reading->synaxarium) {
+        if ($reading && isset($reading->synaxarium)) {
             ?>
             <div class="kata-synaxarium">
                 <div class="synax-item">
-                    <h4><?php echo esc_html($reading->synaxarium->saint_name); ?></h4>
-                    <p><?php echo wp_kses_post($reading->synaxarium->saint_biography); ?></p>
+                    <h4><?php echo esc_html($reading->synaxarium->DayName); ?></h4>
+                    <p><strong>Seasonal Tune:</strong> <?php echo esc_html($reading->synaxarium->Seasonal_Tune); ?></p>
+                    <p><strong>Weather Prayers:</strong> <?php echo esc_html($reading->synaxarium->Weather_Prayers); ?></p>
                 </div>
+            </div>
+            <?php
+        } else {
+            ?>
+            <div class="kata-synaxarium">
+                <p><?php _e('No synaxarium found for this date.', 'katawp'); ?></p>
             </div>
             <?php
         }
