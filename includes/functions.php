@@ -2,33 +2,32 @@
 
 if (!defined('ABSPATH')) exit;
 
+function katawp_get_db_instance() {
+    static $db = null;
+    if ($db === null) {
+        $db = new KataWP_Database();
+    }
+    return $db;
+}
+
 function katawp_get_today_reading() {
-    $db = new KataWP_Database();
-    return $db->get_today_reading();
+    return katawp_get_reading_by_date(date('Y-m-d'));
 }
 
 function katawp_get_reading_by_date($date) {
-    $db = new KataWP_Database();
-    return $db->get_today_reading($date);
+    $cache_key = 'reading_' . $date;
+    $cached = KataWP_Cache::get_reading($cache_key);
+    if ($cached !== false) {
+        return $cached;
+    }
+
+    $reading = katawp_get_db_instance()->get_reading_by_date($date);
+    KataWP_Cache::set_reading($cache_key, $reading);
+
+    return $reading;
 }
 
 function katawp_search_readings($query) {
-    $db = new KataWP_Database();
-    return $db->search_readings($query);
-}
-
-function katawp_format_date($gregorian_date) {
-    $date = new DateTime($gregorian_date);
-    return $date->format('d/m/Y');
-}
-
-function katawp_get_coptic_date($date) {
-    // تحويل التاريخ الميلادي إلى القبطي
-    $reading = new KataWP_Database();
-    $result = $reading->wpdb->get_row(
-        "SELECT coptic_day, coptic_month FROM " . KATAWP_DB_PREFIX . "daily_readings 
-        WHERE gregorian_date = '" . $date . "'"
-    );
-    
-    return $result ? $result->coptic_day . ' ' . $result->coptic_month : '';
+    // سيتم تنفيذ هذا لاحقًا
+    return [];
 }

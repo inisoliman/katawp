@@ -26,75 +26,77 @@ class KataWP_Frontend {
      * Render daily readings
      */
     public static function render_readings($args = array()) {
-        global $wpdb;
-        
         $date = isset($args['date']) ? $args['date'] : current_time('Y-m-d');
-        
-        // Try cache first
-        $cached = KataWP_Cache::get_reading($date);
-        if ($cached !== false) {
-            return $cached;
-        }
-        
-        $readings = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM {$wpdb->prefix}daily_readings WHERE reading_date = %s",
-                $date
-            )
-        );
+        $reading = katawp_get_reading_by_date($date);
         
         ob_start();
-        ?>
-        <div class="kata-readings-container">
-            <?php foreach ($readings as $reading): ?>
+
+        if ($reading && isset($reading->synaxarium)) {
+            ?>
+            <div class="kata-readings-container">
                 <div class="kata-reading-card">
-                    <h3><?php echo esc_html($reading->title); ?></h3>
+                    <h3><?php echo esc_html($reading->synaxarium->DayName); ?></h3>
                     <div class="kata-reading-content">
-                        <?php echo wp_kses_post($reading->content); ?>
+                        <h4>Gospel Reading</h4>
+                        <?php if (!empty($reading->gospel_reading)): ?>
+                            <?php foreach ($reading->gospel_reading as $verse): ?>
+                                <p><?php echo esc_html($verse->Text); ?></p>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p><?php _e('Reading not available.', 'katawp'); ?></p>
+                        <?php endif; ?>
+
+                        <h4>Pauline Reading</h4>
+                        <?php if (!empty($reading->pauline_reading)): ?>
+                            <?php foreach ($reading->pauline_reading as $verse): ?>
+                                <p><?php echo esc_html($verse->Text); ?></p>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <p><?php _e('Reading not available.', 'katawp'); ?></p>
+                        <?php endif; ?>
                     </div>
                 </div>
-            <?php endforeach; ?>
-        </div>
-        <?php
-        $output = ob_get_clean();
-        KataWP_Cache::set_reading($date, $output);
-        return $output;
+            </div>
+            <?php
+        } else {
+            ?>
+            <div class="kata-readings-container">
+                <p><?php _e('No readings found for this date.', 'katawp'); ?></p>
+            </div>
+            <?php
+        }
+
+        return ob_get_clean();
     }
     
     /**
      * Render synaxarium
      */
     public static function render_synaxarium($args = array()) {
-        global $wpdb;
-        
         $date = isset($args['date']) ? $args['date'] : current_time('Y-m-d');
-        
-        $cached = KataWP_Cache::get_synaxarium($date);
-        if ($cached !== false) {
-            return $cached;
-        }
-        
-        $synaxarium = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM {$wpdb->prefix}synaxarium WHERE synax_date = %s",
-                $date
-            )
-        );
+        $reading = katawp_get_reading_by_date($date);
         
         ob_start();
-        ?>
-        <div class="kata-synaxarium">
-            <?php foreach ($synaxarium as $item): ?>
+
+        if ($reading && isset($reading->synaxarium)) {
+            ?>
+            <div class="kata-synaxarium">
                 <div class="synax-item">
-                    <h4><?php echo esc_html($item->saint_name); ?></h4>
-                    <p><?php echo wp_kses_post($item->description); ?></p>
+                    <h4><?php echo esc_html($reading->synaxarium->DayName); ?></h4>
+                    <p><strong>Seasonal Tune:</strong> <?php echo esc_html($reading->synaxarium->Seasonal_Tune); ?></p>
+                    <p><strong>Weather Prayers:</strong> <?php echo esc_html($reading->synaxarium->Weather_Prayers); ?></p>
                 </div>
-            <?php endforeach; ?>
-        </div>
-        <?php
-        $output = ob_get_clean();
-        KataWP_Cache::set_synaxarium($date, $output);
-        return $output;
+            </div>
+            <?php
+        } else {
+            ?>
+            <div class="kata-synaxarium">
+                <p><?php _e('No synaxarium found for this date.', 'katawp'); ?></p>
+            </div>
+            <?php
+        }
+
+        return ob_get_clean();
     }
     
     /**
