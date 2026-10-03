@@ -29,20 +29,16 @@ define('KATAWP_DB_PREFIX', $GLOBALS['wpdb']->prefix . 'katawp_');
 /**
  * تحميل جميع ملفات الإضافة المطلوبة
  */
-// Load required files immediately before plugin initialization
 require_once KATAWP_PLUGIN_DIR . 'includes/class-database.php';
 require_once KATAWP_PLUGIN_DIR . 'includes/db-importer.php';
 require_once KATAWP_PLUGIN_DIR . 'includes/activation.php';
 
 function katawp_load_files() {
     // ملفات الأساس
-    require_once KATAWP_PLUGIN_DIR . 'includes/class-database.php';
     require_once KATAWP_PLUGIN_DIR . 'includes/functions.php';
     			require_once KATAWP_PLUGIN_DIR . 'includes/date-converter.php';
-    require_once KATAWP_PLUGIN_DIR . 'includes/db-importer.php';
     require_once KATAWP_PLUGIN_DIR . 'includes/cache.php';
     require_once KATAWP_PLUGIN_DIR . 'includes/seo.php';
-    require_once KATAWP_PLUGIN_DIR . 'includes/activation.php';
     require_once KATAWP_PLUGIN_DIR . 'includes/api-handlers.php';
     require_once KATAWP_PLUGIN_DIR . 'includes/frontend.php';
     require_once KATAWP_PLUGIN_DIR . 'includes/shortcode.php';
@@ -75,20 +71,12 @@ class KataWP {
     }
     
     public function __construct() {
-        // تحميل نطاقات الترجمة
         add_action('plugins_loaded', [$this, 'load_textdomain']);
-        
-        // إلغاء تفعيل الإضافة
-        register_deactivation_hook(KATAWP_PLUGIN_FILE, [$this, 'deactivate']);
-        
-        // تحميل الأصول (CSS/JS)
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('admin_enqueue_scripts', [$this, 'admin_enqueue_assets']);
         
-        // تهيئة قاعدة البيانات
         $this->db = new KataWP_Database();
         
-        // تهيئة باقي المكونات
         $this->init_components();
     }
     
@@ -218,43 +206,45 @@ class KataWP {
      * تهيئة المكونات الرئيسية
      */
     private function init_components() {
-        add_action('plugins_loaded', function() {
-            // تهيئة الشورت كود
-            if (class_exists('KataWP_Shortcodes')) {
-                new KataWP_Shortcodes();
+        if (class_exists('KataWP_Shortcodes')) {
+            new KataWP_Shortcodes();
+        }
+
+        add_action('widgets_init', function() {
+            if (class_exists('KataWP_Widget_Readings')) {
+                register_widget('KataWP_Widget_Readings');
             }
-            
-            // تهيئة الويدجت
-            add_action('widgets_init', function() {
-                if (class_exists('KataWP_Widget_Readings')) {
-                    register_widget('KataWP_Widget_Readings');
-                }
-                if (class_exists('KataWP_Widget_Search')) {
-                    register_widget('KataWP_Widget_Search');
-                }
-            });
-            
-            // تهيئة REST API
-            if (class_exists('KataWP_REST_API')) {
-                new KataWP_REST_API();
-            }
-            
-            // تهيئة SEO
-            if (class_exists('KataWP_SEO')) {
-                new KataWP_SEO();
+            if (class_exists('KataWP_Widget_Search')) {
+                register_widget('KataWP_Widget_Search');
             }
         });
+
+        if (class_exists('KataWP_REST_API')) {
+            new KataWP_REST_API();
+        }
+
+        if (class_exists('KataWP_SEO')) {
+            new KataWP_SEO();
+        }
     }
 }
 
-// إنشاء نسخة من الفئة الرئيسية
-
-// تهيئة الإضافة الرئيسية - Initialize the plugin
+// Initialize the plugin
 add_action('plugins_loaded', function() {
-	if (class_exists('KataWP')) {
-		KataWP::get_instance();
-	}
+    if (class_exists('KataWP')) {
+        KataWP::get_instance();
+    }
 }, 10);
 
 // Register plugin activation hook
-register_activation_hook(KATAWP_PLUGIN_FILE, function() { KataWP::get_instance()->activate(); });
+register_activation_hook(KATAWP_PLUGIN_FILE, function() {
+    if (class_exists('KataWP')) {
+        KataWP::get_instance()->activate();
+    }
+});
+
+register_deactivation_hook(KATAWP_PLUGIN_FILE, function() {
+    if (class_exists('KataWP')) {
+        KataWP::get_instance()->deactivate();
+    }
+});

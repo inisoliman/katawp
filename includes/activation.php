@@ -71,7 +71,8 @@ $query = new WP_Query(array(
             ));
             $existing = !empty($query->posts) ? $query->posts[0] : null;
             wp_reset_postdata();
-            
+
+            if (!$existing) {
                 $post_id = wp_insert_post($page);
                 $meta_key = $page['meta_key'];
                 $meta_value = $page['meta_value'];
@@ -79,5 +80,5 @@ $query = new WP_Query(array(
             }
         }
     }
-    }
+}
     
